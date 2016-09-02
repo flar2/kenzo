@@ -83,6 +83,11 @@ GRTAGS
 GSYMS
 GTAGS
 
+*.rej
+*.diff
+*.patch
+*.list
+out/*
 *.orig
 *~
 \#*#
