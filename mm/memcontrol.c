@@ -6984,6 +6984,7 @@ static void mem_cgroup_move_task(struct cgroup *cont,
 }
 #endif
 
+#if 0
 static int mem_cgroup_allow_attach(struct cgroup *cgrp,
 				 struct cgroup_taskset *tset)
 {
@@ -7000,6 +7001,7 @@ static int mem_cgroup_allow_attach(struct cgroup *cgrp,
 
 	return 0;
 }
+#endif
 
 /*
  * Cgroup retains root cgroups across [un]mount cycles making it necessary
