@@ -55,7 +55,11 @@
 #define GF_SPIDEV_NAME      "goodix,fingerprint"
 /*device name after register in charater*/
 #define GF_DEV_NAME         "goodix_fp"
+#ifdef CONFIG_HOMEBUTTON
+#define	GF_INPUT_NAME	    "qwerty2"	/*"goodix_fp" */
+#else
 #define	GF_INPUT_NAME	    "qwerty"	/*"goodix_fp" */
+#endif
 
 #define	CHRD_DRIVER_NAME	"goodix_fp_spi"
 #define	CLASS_NAME		    "goodix_fp"
@@ -413,6 +417,12 @@ static irqreturn_t gf_irq(int irq, void *handle)
 #ifdef GF_FASYNC
 	if (gf_dev->async)
 		kill_fasync(&gf_dev->async, SIGIO, POLL_IN);
+#endif
+#ifdef CONFIG_HOMEBUTTON
+	input_report_key(gf_dev->input, KEY_F19, 1);
+	input_sync(gf_dev->input);
+	input_report_key(gf_dev->input, KEY_F19, 0);
+	input_sync(gf_dev->input);
 #endif
 
 
