@@ -99,6 +99,12 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 #endif
 #endif
 	input_event(fpc1020->idev, EV_MSC, MSC_SCAN, ++fpc1020->irq_num);
+#ifdef CONFIG_HOMEBUTTON
+	input_report_key(fpc1020->idev, KEY_F19, 1);
+	input_sync(fpc1020->idev);
+	input_report_key(fpc1020->idev, KEY_F19, 0);
+	input_sync(fpc1020->idev);
+#endif
 	input_sync(fpc1020->idev);
 	dev_info(fpc1020->dev, "%s %d\n", __func__, fpc1020->irq_num);
 	return IRQ_HANDLED;
@@ -432,6 +438,10 @@ static int fpc1020_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
+#ifdef CONFIG_HOMEBUTTON
+	set_bit(EV_KEY, fpc1020->idev->evbit);
+	set_bit(KEY_F19, fpc1020->idev->keybit);
+#endif
 	input_set_capability(fpc1020->idev, 4, 4);
 	if (!of_property_read_string(np, "input-device-name", &idev_name)) {
 		fpc1020->idev->name = idev_name;
