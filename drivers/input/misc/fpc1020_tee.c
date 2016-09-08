@@ -82,7 +82,32 @@ typedef struct fpc1020_data {
 	struct pinctrl_state   *gpio_state_active;
 	struct pinctrl_state   *gpio_state_suspend;
 	bool is_gpio_enabled;
+	struct work_struct finger_work;
 } fpc1020_data_t;
+
+static volatile unsigned long press_time = 0;
+static bool press_state = false;
+
+static void button_press (struct fpc1020_data *fpc1020, bool state)
+{
+	input_report_key(fpc1020->idev, KEY_F18, state);
+	input_sync(fpc1020->idev);
+}
+
+static void finger_press_work(struct work_struct *work)
+{
+	struct fpc1020_data *fpc1020 =
+		container_of(work, typeof(*fpc1020), finger_work);
+
+	button_press(fpc1020, true);
+
+	while (jiffies - press_time < 20) {
+		press_state = true;
+	}
+
+	button_press(fpc1020, false);
+	press_state = false;
+}
 
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
@@ -98,13 +123,13 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 	}
 #endif
 #endif
-	input_event(fpc1020->idev, EV_MSC, MSC_SCAN, ++fpc1020->irq_num);
 #ifdef CONFIG_HOMEBUTTON
-	input_report_key(fpc1020->idev, KEY_F19, 1);
-	input_sync(fpc1020->idev);
-	input_report_key(fpc1020->idev, KEY_F19, 0);
-	input_sync(fpc1020->idev);
+	press_time = jiffies;
+
+	if (!press_state)
+		schedule_work(&fpc1020->finger_work);
 #endif
+	input_event(fpc1020->idev, EV_MSC, MSC_SCAN, ++fpc1020->irq_num);
 	input_sync(fpc1020->idev);
 	dev_info(fpc1020->dev, "%s %d\n", __func__, fpc1020->irq_num);
 	return IRQ_HANDLED;
@@ -440,7 +465,8 @@ static int fpc1020_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_HOMEBUTTON
 	set_bit(EV_KEY, fpc1020->idev->evbit);
-	set_bit(KEY_F19, fpc1020->idev->keybit);
+	set_bit(KEY_F18, fpc1020->idev->keybit);
+	INIT_WORK(&fpc1020->finger_work, finger_press_work);
 #endif
 	input_set_capability(fpc1020->idev, 4, 4);
 	if (!of_property_read_string(np, "input-device-name", &idev_name)) {

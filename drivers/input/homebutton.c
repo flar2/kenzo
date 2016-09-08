@@ -100,16 +100,27 @@ static bool hb_input_filter(struct input_handle *handle, unsigned int type,
 	if (!hb_data.enable || hb_data.scr_suspended)
 		return false;
 
-	if (jiffies - hb_data.time_on < 600)
-		return false;
+	switch (code) {
+		case KEY_F18 :
+			if (value == 1)
+				hb_data.key_down = true;
+			else
+				hb_data.key_down = false;
+			break;
 
-	if (value > 0) {
-		hb_data.key_down = !hb_data.key_down;
+		case KEY_F19 :
+			if (jiffies - hb_data.time_on < 600)
+				return false;
 
-		if (hb_data.pressed && (jiffies - hb_data.press_time > 600))
-			hb_data.key_down = true;
+			if (value > 0) {
+				hb_data.key_down = !hb_data.key_down;
 
-		hb_data.press_time = jiffies;
+				if (hb_data.pressed && (jiffies - hb_data.press_time > 600))
+					hb_data.key_down = true;
+
+				hb_data.press_time = jiffies;
+			}
+			break;
 	}
 
 	schedule_work(&hb_data.hb_input_work);
