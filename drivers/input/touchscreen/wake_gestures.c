@@ -37,7 +37,7 @@
 */
 
 /* Tuneables */
-#define WG_DEBUG		1
+#define WG_DEBUG		0
 #define WG_DEFAULT		0
 #define DT2W_DEFAULT		0
 #define S2W_DEFAULT		4
@@ -147,6 +147,8 @@ static void wake_presspwr(struct work_struct * wake_presspwr_work) {
 	msleep(WG_PWRKEY_DUR);
 	mutex_unlock(&pwrkeyworklock);
 
+	set_vibrate(vib_strength);
+
 	return;
 }
 static DECLARE_WORK(wake_presspwr_work, wake_presspwr);
@@ -159,7 +161,6 @@ static void wake_pwrtrigger(void) {
 	if (pwrtrigger_time[0] - pwrtrigger_time[1] < TRIGGER_TIMEOUT)
 		return;
 
-	set_vibrate(vib_strength);	
 	schedule_work(&wake_presspwr_work);
 
         return;
@@ -452,6 +453,7 @@ static void wg_input_event(struct input_handle *handle, unsigned int type,
 		(code==ABS_MT_TRACKING_ID) ? "ID" :
 		"undef"), code, value);
 #endif
+
 	if (code == ABS_MT_SLOT) {
 		sweep2wake_reset();
 		doubletap2wake_reset();
