@@ -19,6 +19,7 @@ struct homebutton_data {
 	bool scr_suspended;
 	bool enable;
 	bool pressed;
+	bool disable;
 	unsigned long time_on;
 	unsigned long  press_time;
 	unsigned int vib_strength;
@@ -28,10 +29,15 @@ struct homebutton_data {
 	.enable = false,
 	.key = KEY_HOME,
 	.time_on = 0,
-	.press_time = 0
+	.press_time = 0,
+	.disable = false
 };
 
 static void hb_input_callback(struct work_struct *unused) {
+
+	if (hb_data.disable)
+		return;
+
 	if (!mutex_trylock(&hb_lock))
 		return;
 
@@ -51,7 +57,8 @@ static void hb_input_callback(struct work_struct *unused) {
 }
 
 static int input_dev_filter(struct input_dev *dev) {
-	if (/*strstr(dev->name, "fpc1020") ||*/ strstr(dev->name, "qwerty2")) {
+	if (/*strstr(dev->name, "fpc1020") ||*/ strstr(dev->name, "qwerty2") ||
+		strstr(dev->name, "Atmel") || strstr(dev->name, "ft5x06_ts")) {
 		return 0;
 	} else {
 		return 1;
@@ -91,41 +98,49 @@ err_input_register_handle:
 	return rc;
 }
 
-static bool hb_input_filter(struct input_handle *handle, unsigned int type, 
-						unsigned int code, int value)
+static void hb_input_event(struct input_handle *handle,
+		unsigned int type, unsigned int code, int value)
 {
-	if (type != EV_KEY) 
-		return false;
+	if (code == ABS_MT_TRACKING_ID) {
+		if (value > 0)
+			hb_data.disable = true;
+		else
+			hb_data.disable = false;
 
-	if (!hb_data.enable || hb_data.scr_suspended)
-		return false;
-
-	switch (code) {
-		case KEY_F18 :
-			if (value == 1)
-				hb_data.key_down = true;
-			else
-				hb_data.key_down = false;
-			break;
-
-		case KEY_F19 :
-			if (jiffies - hb_data.time_on < 600)
-				return false;
-
-			if (value > 0) {
-				hb_data.key_down = !hb_data.key_down;
-
-				if (hb_data.pressed && (jiffies - hb_data.press_time > 600))
-					hb_data.key_down = true;
-
-				hb_data.press_time = jiffies;
-			}
-			break;
+		return;
 	}
 
-	schedule_work(&hb_data.hb_input_work);
+	if (!hb_data.enable || hb_data.scr_suspended)
+		return;
 
-	return true;
+	if (type == EV_KEY)  {
+		switch (code) {
+			case KEY_F18 :
+				if (value == 1)
+					hb_data.key_down = true;
+				else
+					hb_data.key_down = false;
+
+				schedule_work(&hb_data.hb_input_work);
+				break;
+
+			case KEY_F19 :
+				if (jiffies - hb_data.time_on < 600)
+					return;
+
+				if (value > 0) {
+					hb_data.key_down = !hb_data.key_down;
+
+					if (hb_data.pressed && (jiffies - hb_data.press_time > 600))
+						hb_data.key_down = true;
+
+					hb_data.press_time = jiffies;
+				}
+
+				schedule_work(&hb_data.hb_input_work);
+				break;
+		}
+	}
 }
 
 static void hb_input_disconnect(struct input_handle *handle)
@@ -141,7 +156,7 @@ static const struct input_device_id hb_ids[] = {
 };
 
 static struct input_handler hb_input_handler = {
-	.filter		= hb_input_filter,
+	.event		= hb_input_event,
 	.connect	= hb_input_connect,
 	.disconnect	= hb_input_disconnect,
 	.name		= "hb_inputreq",
