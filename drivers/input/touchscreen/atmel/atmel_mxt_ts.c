@@ -2045,6 +2045,11 @@ static void mxt_proc_t15_messages(struct mxt_data *data, u8 *msg)
 	if (!data->enable_reporting)
 		return;
 
+#ifdef CONFIG_WAKE_GESTURES
+	if (data->suspended)
+		return;
+#endif
+
 	if (!data->pdata->keymap || !data->pdata->num_keys)
 		return;
 
@@ -5277,12 +5282,15 @@ static void mxt_stop(struct mxt_data *data, bool suspend)
 
 	if (atomic_read(&data->depth) > 0) {
 #ifdef CONFIG_WAKE_GESTURES
-		if (!s2w_switch && !dt2w_switch)
+		if (!s2w_switch && !dt2w_switch) {
 			board_disable_irq(data->pdata, data->irq);
+			atomic_dec(&data->depth);
+		}
 #else
 		board_disable_irq(data->pdata, data->irq);
-#endif
 		atomic_dec(&data->depth);
+#endif
+
 	}
 #ifdef CONFIG_WAKE_GESTURES
 	if (!s2w_switch && !dt2w_switch)
@@ -5295,7 +5303,6 @@ static void mxt_stop(struct mxt_data *data, bool suspend)
 	else {
 #ifdef CONFIG_WAKE_GESTURES
 		if (s2w_switch || dt2w_switch) {
-
 			board_enable_irq_wake(data->pdata, data->irq);
 			mxt_set_t7_power_cfg(data, MXT_POWER_CFG_WAKE_GESTURES);
 		} else
