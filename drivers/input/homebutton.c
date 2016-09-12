@@ -51,7 +51,7 @@ static void hb_input_callback(struct work_struct *unused) {
 }
 
 static int input_dev_filter(struct input_dev *dev) {
-	if (strstr(dev->name, "fpc1020") || strstr(dev->name, "qwerty2")) {
+	if (/*strstr(dev->name, "fpc1020") ||*/ strstr(dev->name, "qwerty2")) {
 		return 0;
 	} else {
 		return 1;
