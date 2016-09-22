@@ -82,13 +82,11 @@ typedef struct fpc1020_data {
 	struct pinctrl_state   *gpio_state_active;
 	struct pinctrl_state   *gpio_state_suspend;
 	bool is_gpio_enabled;
-#ifdef CONFIG_HOMEBUTTON
-	//struct work_struct finger_work;
-#endif
+	struct work_struct finger_work;
 } fpc1020_data_t;
 
 #ifdef CONFIG_HOMEBUTTON
-/*static volatile unsigned long press_time = 0;
+static volatile unsigned long press_time = 0;
 static bool press_state = false;
 
 static void button_press (struct fpc1020_data *fpc1020, bool state)
@@ -110,7 +108,7 @@ static void finger_press_work(struct work_struct *work)
 
 	button_press(fpc1020, false);
 	press_state = false;
-}*/
+}
 #endif
 
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
@@ -468,9 +466,9 @@ static int fpc1020_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_HOMEBUTTON
-	/*set_bit(EV_KEY, fpc1020->idev->evbit);
+	set_bit(EV_KEY, fpc1020->idev->evbit);
 	set_bit(KEY_F18, fpc1020->idev->keybit);
-	INIT_WORK(&fpc1020->finger_work, finger_press_work);*/
+	INIT_WORK(&fpc1020->finger_work, finger_press_work);
 #endif
 	input_set_capability(fpc1020->idev, 4, 4);
 	if (!of_property_read_string(np, "input-device-name", &idev_name)) {
