@@ -85,6 +85,7 @@ typedef struct fpc1020_data {
 	struct work_struct finger_work;
 } fpc1020_data_t;
 
+#ifdef CONFIG_HOMEBUTTON
 static volatile unsigned long press_time = 0;
 static bool press_state = false;
 
@@ -108,6 +109,7 @@ static void finger_press_work(struct work_struct *work)
 	button_press(fpc1020, false);
 	press_state = false;
 }
+#endif
 
 static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
@@ -124,10 +126,10 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 #endif
 #endif
 #ifdef CONFIG_HOMEBUTTON
-	press_time = jiffies;
+	/*press_time = jiffies;
 
 	if (!press_state)
-		schedule_work(&fpc1020->finger_work);
+		schedule_work(&fpc1020->finger_work);*/
 #endif
 	input_event(fpc1020->idev, EV_MSC, MSC_SCAN, ++fpc1020->irq_num);
 	input_sync(fpc1020->idev);
