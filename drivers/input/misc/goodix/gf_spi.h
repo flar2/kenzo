@@ -76,7 +76,6 @@ struct gf_dev {
 	struct notifier_block notifier;
 	char device_available;
 	char fb_black;
-	int new_driver;
 };
 
 int gf_parse_dts(struct gf_dev *gf_dev);
